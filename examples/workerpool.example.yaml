@@ -1,0 +1,23 @@
+# TEMPLATE ONLY. Not included in the UI's Kustomize deployment.
+# Replace workerImage with the resolved ateworker-gvisor image digest
+# from the SAME Substrate build. Do not pass ko:// to kubectl.
+apiVersion: ate.dev/v1alpha1
+kind: WorkerPool
+metadata:
+  name: agent-desk-workers
+  namespace: ax-system
+spec:
+  replicas: 1
+  workerImage: REPLACE_WITH_PINNED_ATEWORKER_GVISOR_IMAGE
+  sandboxClasses:
+    - name: gvisor
+      configRef:
+        name: gvisor-default
+  template:
+    resources:
+      requests:
+        cpu: "1"
+        memory: 2Gi
+      limits:
+        cpu: "4"
+        memory: 8Gi

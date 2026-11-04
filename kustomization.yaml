@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: agent-desk-demo
+resources:
+  - deploy/k3s/ui.yaml
+configMapGenerator:
+  - name: agent-desk-static
+    files:
+      - dist/index.html
+      - dist/styles.css
+      - dist/app.js
+      - dist/icon.svg
+  - name: agent-desk-nginx
+    files:
+      - deploy/nginx/default.conf
+generatorOptions:
+  labels:
+    app.kubernetes.io/part-of: agent-desk-demo

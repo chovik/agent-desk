@@ -1,0 +1,169 @@
+# Single-operator demo. Render with scripts/render-portal.py; credentials are separate.
+# Intentionally no ingress/NodePort and no mounted Kubernetes API bearer token.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: agent-desk-portal-data
+  namespace: ax-system
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent-desk-portal
+  namespace: ax-system
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: agent-desk-portal}
+  template:
+    metadata:
+      labels: {app: agent-desk-portal}
+    spec:
+      # Demo shares the already authorized AX identity for guest access.
+      # Do not generalize this to untrusted tenants or mount its Kubernetes token.
+      serviceAccountName: ax-server
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+      - name: portal
+        image: ${PORTAL_IMAGE}
+        ports: [{name: http, containerPort: 8080}]
+        env:
+        - {name: Portal__DataDirectory, value: /data}
+        - {name: Portal__UsersFile, value: /run/login/users.json}
+        - {name: Portal__StaticDirectory, value: /app/dist}
+        - {name: Portal__AxAddress, value: 'http://ax-server.ax-system.svc:8080'}
+        - {name: Portal__RouterAddress, value: 'https://atenet-router.ate-system.svc:443'}
+        - {name: Portal__IdentityBundle, value: /run/identity/bundle.pem}
+        - {name: Portal__CaBundle, value: /run/ca/bundle.pem}
+        - {name: Portal__RunnerImage, value: '${RUNNER_IMAGE}'}
+        - {name: Portal__CodexRunnerImage, value: '${CODEX_RUNNER_IMAGE}'}
+        - {name: Portal__CodexModel, value: '${CODEX_MODEL}'}
+        - {name: Portal__Atespace, value: agent-desk}
+        # Public deployment always requires HTTPS and secure cookies.
+        - {name: Portal__AllowInsecureLabCookie, value: '${ALLOW_INSECURE_LAB_COOKIE}'}
+        - {name: Portal__PublicOrigin, value: '${PUBLIC_ORIGIN}'}
+        - {name: Portal__TrustedProxyNetworks, value: '${TRUSTED_PROXY_NETWORKS}'}
+        - {name: Portal__GithubEnabled, value: 'true'}
+        - {name: Portal__CodexEnabled, value: 'true'}
+        - {name: Portal__CodexScratch, value: /run/codex}
+        - {name: Portal__CodexVaultKey, value: /run/codex-vault/key}
+        - {name: Portal__CodexProxy, value: 'http://agent-desk-codex-egress.ax-system.svc:3128'}
+        resources:
+          requests: {cpu: 100m, memory: 128Mi}
+          limits: {cpu: '1', memory: 768Mi}
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities: {drop: [ALL]}
+        readinessProbe:
+          httpGet: {path: /healthz, port: http}
+          initialDelaySeconds: 3
+          periodSeconds: 5
+        livenessProbe:
+          httpGet: {path: /healthz, port: http}
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        volumeMounts:
+        - {name: data, mountPath: /data}
+        - {name: login, mountPath: /run/login, readOnly: true}
+        - {name: identity, mountPath: /run/identity, readOnly: true}
+        - {name: ca, mountPath: /run/ca, readOnly: true}
+        - {name: tmp, mountPath: /tmp}
+        - {name: codex-scratch, mountPath: /run/codex}
+        - {name: codex-vault, mountPath: /run/codex-vault, readOnly: true}
+      volumes:
+      - name: data
+        persistentVolumeClaim: {claimName: agent-desk-portal-data}
+      - name: login
+        secret: {secretName: agent-desk-portal-login, defaultMode: 288}
+      - name: tmp
+        emptyDir: {sizeLimit: 32Mi}
+      - name: codex-scratch
+        emptyDir: {medium: Memory, sizeLimit: 128Mi}
+      - name: codex-vault
+        secret: {secretName: agent-desk-codex-vault, defaultMode: 288}
+      - name: identity
+        projected:
+          sources:
+          - podCertificate:
+              credentialBundlePath: bundle.pem
+              keyType: ECDSAP256
+              signerName: podidentity.podcert.ate.dev/identity
+      - name: ca
+        projected:
+          sources:
+          - clusterTrustBundle:
+              labelSelector:
+                matchLabels: {podcert.ate.dev/canarying: live}
+              path: bundle.pem
+              signerName: servicedns.podcert.ate.dev/identity
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-desk-portal
+  namespace: ax-system
+spec:
+  selector: {app: agent-desk-portal}
+  ports: [{name: http, port: 8080, targetPort: http}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: agent-desk-portal-private
+  namespace: ax-system
+spec:
+  podSelector:
+    matchLabels: {app: agent-desk-portal}
+  policyTypes: [Ingress, Egress]
+  ingress: []
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels: {kubernetes.io/metadata.name: kube-system}
+      podSelector:
+        matchLabels: {k8s-app: kube-dns}
+    ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+  - to:
+    - podSelector:
+        matchLabels: {app: agent-desk-codex-egress}
+    ports: [{protocol: TCP, port: 3128}]
+  - to:
+    - podSelector:
+        matchLabels: {app.kubernetes.io/name: ax-server}
+    ports: [{protocol: TCP, port: 8080}]
+  - to:
+    - namespaceSelector:
+        matchLabels: {kubernetes.io/metadata.name: ate-system}
+      podSelector:
+        matchLabels: {app: atenet-router}
+    # NetworkPolicy evaluates the router pod target port, not Service port 443.
+    ports: [{protocol: TCP, port: 8443}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ax-api-from-portal-only
+  namespace: ax-system
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: ax-server}
+  policyTypes: [Ingress]
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels: {app: agent-desk-portal}
+    ports: [{protocol: TCP, port: 8080}]

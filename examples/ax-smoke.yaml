@@ -1,0 +1,28 @@
+# Apply with the matching `ax` CLI, NOT kubectl.
+# Requires an installed AX server, its default runner image, ready Substrate
+# workers, authorization and snapshot storage. Uses no model API keys.
+apiVersion: ax.io/v1alpha1
+kind: Workspace
+metadata:
+  name: agent-desk-smoke-workspace
+  atespace: default
+spec:
+  files:
+  - path: seed.txt
+    content: "agent-desk demo seed"
+---
+apiVersion: ax.io/v1alpha1
+kind: Task
+metadata:
+  name: agent-desk-smoke
+  atespace: default
+spec:
+  command: [sleep, infinity]
+  workspace:
+    name: agent-desk-smoke-workspace
+    path: /workspace
+  resources:
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  debug: true

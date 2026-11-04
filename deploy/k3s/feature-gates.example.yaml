@@ -1,0 +1,12 @@
+# K3s configuration fragment for the Kubernetes 1.36 feature names used
+# by the pinned upstream setup. NOT a Kubernetes manifest.
+# Review against your installed K3s/Kubernetes version before use.
+# Merge into /etc/rancher/k3s/config.yaml; do not overwrite existing options.
+# Agents need the kubelet-arg block too. Restarting K3s affects workloads.
+kube-apiserver-arg:
+  - feature-gates=ClusterTrustBundle=true,ClusterTrustBundleProjection=true,PodCertificateRequest=true
+  - runtime-config=certificates.k8s.io/v1beta1=true
+kube-controller-manager-arg:
+  - feature-gates=ClusterTrustBundle=true,ClusterTrustBundleProjection=true,PodCertificateRequest=true
+kubelet-arg:
+  - feature-gates=ClusterTrustBundle=true,ClusterTrustBundleProjection=true,PodCertificateRequest=true

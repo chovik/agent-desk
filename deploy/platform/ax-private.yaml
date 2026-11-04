@@ -1,0 +1,10 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ax-api-private
+  namespace: ax-system
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: ax-server}
+  policyTypes: [Ingress]
+  ingress: []

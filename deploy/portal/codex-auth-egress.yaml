@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: agent-desk-codex-egress, namespace: ax-system}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: agent-desk-codex-egress}}
+  template:
+    metadata:
+      labels: {app: agent-desk-codex-egress}
+      annotations: {agent-desk.io/proxy-sha256: "${PROXY_SHA256}"}
+    spec:
+      automountServiceAccountToken: false
+      securityContext: {runAsNonRoot: true, runAsUser: 65532, runAsGroup: 65532, seccompProfile: {type: RuntimeDefault}}
+      containers:
+      - name: connect
+        image: ${RUNNER_IMAGE}
+        command: [python3, -B, /opt/proxy/connect.py]
+        ports: [{name: connect, containerPort: 3128}]
+        resources: {requests: {cpu: 10m, memory: 24Mi}, limits: {cpu: 100m, memory: 64Mi}}
+        securityContext: {readOnlyRootFilesystem: true, allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
+        readinessProbe: {tcpSocket: {port: connect}, periodSeconds: 5}
+        volumeMounts: [{name: script, mountPath: /opt/proxy, readOnly: true}]
+      volumes:
+      - name: script
+        configMap: {name: agent-desk-codex-egress}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: agent-desk-codex-egress, namespace: ax-system}
+spec:
+  selector: {app: agent-desk-codex-egress}
+  ports: [{name: connect, port: 3128, targetPort: connect}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: agent-desk-codex-egress, namespace: ax-system}
+spec:
+  podSelector: {matchLabels: {app: agent-desk-codex-egress}}
+  policyTypes: [Ingress, Egress]
+  ingress:
+  - from: [{podSelector: {matchLabels: {app: agent-desk-portal}}}]
+    ports: [{protocol: TCP, port: 3128}]
+  egress:
+  - to:
+    - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}
+      podSelector: {matchLabels: {k8s-app: kube-dns}}
+    ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except: [0.0.0.0/8, 10.0.0.0/8, 100.64.0.0/10, 127.0.0.0/8, 169.254.0.0/16, 172.16.0.0/12, 192.168.0.0/16, 192.0.0.0/24, 198.18.0.0/15, 224.0.0.0/4, 240.0.0.0/4]
+    ports: [{protocol: TCP, port: 443}]

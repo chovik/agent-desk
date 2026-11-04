@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../../guest/repository.py" LogicalName="repository-helper" />
+    <EmbeddedResource Include="../../guest/workspace_files.py" LogicalName="workspace-files" />
+    <EmbeddedResource Include="../../guest/export_files.py" LogicalName="workspace-export" />
+    <PackageReference Include="Google.Protobuf" Version="3.30.2" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.71.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.71.0" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.12" />
+    <Protobuf Include="../../third_party/ax/ax.proto" GrpcServices="Client" />
+    <Protobuf Include="../../third_party/substrate-env/guest.proto" GrpcServices="Client" />
+  </ItemGroup>
+</Project>
