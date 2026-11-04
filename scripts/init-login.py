@@ -35,4 +35,3 @@ def main():
     print('Back up the vault key separately. Do not recreate it on upgrades.')
 
 if __name__=='__main__': main()
-

@@ -79,4 +79,3 @@ remote**. Publication is a trusted backend operation. See [GitHub](GITHUB.md).
 
 Backend filenames are relative to `backend/AgentDesk.Portal/`. The fixed guest
 helpers are in `guest/`; protocol code generation happens during the .NET build.
-

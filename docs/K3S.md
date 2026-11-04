@@ -181,15 +181,13 @@ umask 077
 openssl rand -hex 24 | tr -d '\n' > .local/ax-postgres-password
 kubectl --context "$CONTEXT" -n ax-system create secret generic ax-postgres \
   --from-file=password=.local/ax-postgres-password
+# Deny AX API ingress before starting the server.
+kubectl --context "$CONTEXT" apply -f deploy/platform/ax-private.yaml
 kubectl --context "$CONTEXT" apply -f .local/rendered/ax.yaml
 ```
 
-Protect AX immediately with an ingress-deny policy; the portal later adds a narrow
-allow rule. This API has no application authentication at the pinned version.
-
-```bash
-kubectl --context "$CONTEXT" apply -f deploy/platform/ax-private.yaml
-```
+Keep that ingress-deny policy; the portal later adds a narrow allow rule. This API
+has no application authentication at the pinned version.
 
 Add a gVisor WorkerPool using [the example](../examples/workerpool.example.yaml).
 Set `workerImage` to the digest from the **same Substrate build**, not a `ko://`

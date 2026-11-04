@@ -63,5 +63,9 @@ class PackagingTests(unittest.TestCase):
         self.assertIn('npm pack --ignore-scripts',text)
         self.assertIn('third_party/codex/bundle.sha256',text)
 
-if __name__=='__main__': unittest.main()
+    def test_build_refuses_incomplete_or_stale_context(self):
+        text=(ROOT/'scripts/build-images.sh').read_text()
+        self.assertIn('-f .local/build/complete',text)
+        self.assertIn('cat .local/build/revision',text)
 
+if __name__=='__main__': unittest.main()

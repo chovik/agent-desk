@@ -12,4 +12,3 @@ node --test tests/*.test.cjs
 python3 -m unittest discover -s tests -p 'test_*.py'
 for script in scripts/*.sh; do bash -n "$script"; done
 python3 scripts/check-public-tree.py
-

@@ -16,4 +16,3 @@ TMP=$(mktemp -d)
 trap 'rm -rf -- "$TMP"' EXIT
 git archive HEAD | tar -x -C "$TMP"
 .local/tools/gitleaks dir --redact --no-banner "$TMP"
-

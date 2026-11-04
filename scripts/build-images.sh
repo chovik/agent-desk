@@ -8,7 +8,7 @@ cd "$(dirname "$0")/.."
 [[ "$AX_RUNNER_IMAGE" =~ ^[a-zA-Z0-9._:/-]+@sha256:[a-f0-9]{64}$ ]] || { echo 'AX_RUNNER_IMAGE must be digest-pinned.' >&2; exit 2; }
 [[ "$IMAGE_REPOSITORY" =~ ^[a-zA-Z0-9._:/-]+$ && "$IMAGE_REPOSITORY" != *example* ]] || { echo 'Set a real image repository.' >&2; exit 2; }
 [[ -z $(git status --porcelain) ]] || { echo 'Commit/review source before building a labelled image.' >&2; exit 1; }
-[[ -d .local/build/publish && -f .local/build/codex ]] || { echo 'Run scripts/prepare-images.sh first.' >&2; exit 1; }
+[[ -f .local/build/complete && -d .local/build/publish && -f .local/build/codex ]] || { echo 'Run scripts/prepare-images.sh to completion first.' >&2; exit 1; }
 REVISION=$(git rev-parse HEAD)
 [[ "$(cat .local/build/revision)" == "$REVISION" ]] || { echo "Build context is stale; prepare it again from this commit." >&2; exit 1; }
 PORTAL_TAG="$IMAGE_REPOSITORY/agent-desk-portal:${REVISION:0:12}"
@@ -29,4 +29,3 @@ values={'PORTAL_IMAGE':digest(sys.argv[1]),'CODEX_RUNNER_IMAGE':digest(sys.argv[
 p=pathlib.Path('.local/images.json');p.write_text(json.dumps(values,indent=2)+'\n')
 print('Image references written to .local/images.json; no deployment performed.')
 PY
-

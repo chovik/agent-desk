@@ -19,6 +19,12 @@ turnkey support based on the earlier isolated-container experiment.
 
 ## Automated checks
 
+Public extraction validation (2026-11-04): **85 .NET, 35 JavaScript and 33 Python
+tests passed**; loopback/HTTPS portal manifests and static UI manifests rendered;
+Gitleaks reported no findings in the new history/source archive. The .NET publish
+and official Codex package download/hash checks also completed. No fresh cluster,
+provider authorization or GitHub PR was created for this public-packaging check.
+
 ```bash
 ./scripts/test.sh
 ./scripts/scan-secrets.sh

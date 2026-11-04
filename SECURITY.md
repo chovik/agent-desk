@@ -64,4 +64,3 @@ sensitive data**. This community demo has no guaranteed response SLA.
 
 Report upstream defects to the relevant upstream project; do not assume this
 project's maintainer can provide Google/OpenAI/Substrate security support.
-

@@ -31,5 +31,6 @@ cp third_party/codex/LICENSE "$OUT/publish/CODEX-LICENSE"
 cp -a dist guest "$OUT/"
 # Delete only this invocation’s temporary package extraction.
 rm -rf -- "$OUT/download"
+[[ -z $(git status --porcelain) && $(git rev-parse HEAD) == "$(cat "$OUT/revision")" ]] || { echo 'Source changed during preparation; discard this context.' >&2; exit 1; }
+touch "$OUT/complete"
 printf 'Prepared %s. Nothing deployed or pushed.\n' "$OUT"
-
